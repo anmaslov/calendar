@@ -26,18 +26,13 @@ func NewEventRepository(db *sqlx.DB) repository.EventRepository {
 }
 
 func (r *eventRepository) GetByID(ctx context.Context, id string) (*domain.Event, error) {
-	query, args, err := psql.
-		Select("*").
-		From(eventsTable).
-		Where(sq.Eq{"id": id}).
-		ToSql()
+	query, args, err := psql.Select("*").From(eventsTable).Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return nil, err
 	}
 
 	var event domain.Event
-	err = r.db.GetContext(ctx, &event, query, args...)
-	if err != nil {
+	if err := r.db.GetContext(ctx, &event, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrEventNotFound
 		}
@@ -48,12 +43,8 @@ func (r *eventRepository) GetByID(ctx context.Context, id string) (*domain.Event
 }
 
 func (r *eventRepository) List(ctx context.Context, filter domain.EventFilter) ([]*domain.Event, error) {
-	builder := psql.
-		Select("*").
-		From(eventsTable)
-
-	builder = applyEventFilter(builder, filter)
-	builder = builder.OrderBy("start_time ASC")
+	builder := applyEventFilter(psql.Select("*").From(eventsTable), filter).
+		OrderBy("start_time ASC")
 
 	if filter.Limit > 0 {
 		builder = builder.Limit(uint64(filter.Limit))
@@ -69,8 +60,7 @@ func (r *eventRepository) List(ctx context.Context, filter domain.EventFilter) (
 	}
 
 	var events []*domain.Event
-	err = r.db.SelectContext(ctx, &events, query, args...)
-	if err != nil {
+	if err := r.db.SelectContext(ctx, &events, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -78,20 +68,13 @@ func (r *eventRepository) List(ctx context.Context, filter domain.EventFilter) (
 }
 
 func (r *eventRepository) Count(ctx context.Context, filter domain.EventFilter) (int64, error) {
-	builder := psql.
-		Select("COUNT(*)").
-		From(eventsTable)
-
-	builder = applyEventFilter(builder, filter)
-
-	query, args, err := builder.ToSql()
+	query, args, err := applyEventFilter(psql.Select("COUNT(*)").From(eventsTable), filter).ToSql()
 	if err != nil {
 		return 0, err
 	}
 
 	var count int64
-	err = r.db.GetContext(ctx, &count, query, args...)
-	if err != nil {
+	if err := r.db.GetContext(ctx, &count, query, args...); err != nil {
 		return 0, err
 	}
 
@@ -99,22 +82,18 @@ func (r *eventRepository) Count(ctx context.Context, filter domain.EventFilter) 
 }
 
 // applyEventFilter applies common filters to the query builder.
-func applyEventFilter(builder sq.SelectBuilder, filter domain.EventFilter) sq.SelectBuilder {
-	if filter.StartDate != nil {
-		builder = builder.Where(sq.GtOrEq{"start_time": *filter.StartDate})
+func applyEventFilter(b sq.SelectBuilder, f domain.EventFilter) sq.SelectBuilder {
+	if f.StartDate != nil {
+		b = b.Where(sq.GtOrEq{"start_time": *f.StartDate})
 	}
-
-	if filter.EndDate != nil {
-		builder = builder.Where(sq.LtOrEq{"end_time": *filter.EndDate})
+	if f.EndDate != nil {
+		b = b.Where(sq.LtOrEq{"end_time": *f.EndDate})
 	}
-
-	if filter.Subject != "" {
-		builder = builder.Where(sq.ILike{"subject": "%" + filter.Subject + "%"})
+	if f.Subject != "" {
+		b = b.Where(sq.ILike{"subject": "%" + f.Subject + "%"})
 	}
-
-	if filter.Status != "" {
-		builder = builder.Where(sq.Eq{"status": filter.Status})
+	if f.Status != "" {
+		b = b.Where(sq.Eq{"status": f.Status})
 	}
-
-	return builder
+	return b
 }

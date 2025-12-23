@@ -34,8 +34,7 @@ func (r *eventSyncRepository) Upsert(ctx context.Context, event *domain.Event) e
 	event.UpdatedAt = now
 	event.SyncedAt = &now
 
-	query, args, err := psql.
-		Insert(eventsTable).
+	query, args, err := psql.Insert(eventsTable).
 		Columns(eventColumns...).
 		Values(
 			event.ID, event.ExchangeID, event.Subject, event.Body, event.Location,
@@ -66,22 +65,12 @@ func (r *eventSyncRepository) Upsert(ctx context.Context, event *domain.Event) e
 }
 
 func (r *eventSyncRepository) DeleteNotInExchangeIDs(ctx context.Context, exchangeIDs []string) error {
-	if len(exchangeIDs) == 0 {
-		// Delete all events if no IDs provided
-		query, args, err := psql.
-			Delete(eventsTable).
-			ToSql()
-		if err != nil {
-			return err
-		}
-		_, err = r.db.ExecContext(ctx, query, args...)
-		return err
+	builder := psql.Delete(eventsTable)
+	if len(exchangeIDs) > 0 {
+		builder = builder.Where(sq.NotEq{"exchange_id": exchangeIDs})
 	}
 
-	query, args, err := psql.
-		Delete(eventsTable).
-		Where(sq.NotEq{"exchange_id": exchangeIDs}).
-		ToSql()
+	query, args, err := builder.ToSql()
 	if err != nil {
 		return err
 	}
