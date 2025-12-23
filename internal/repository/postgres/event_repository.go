@@ -8,6 +8,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/anmaslov/calendar/internal/domain"
 	"github.com/anmaslov/calendar/internal/repository"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -25,21 +26,21 @@ func NewEventRepository(db *sqlx.DB) repository.EventRepository {
 	return &eventRepository{db: db}
 }
 
-func (r *eventRepository) GetByID(ctx context.Context, id string) (*domain.Event, error) {
+func (r *eventRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
 	query, args, err := psql.Select("*").From(eventsTable).Where(sq.Eq{"id": id}).ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	var event domain.Event
-	if err := r.db.GetContext(ctx, &event, query, args...); err != nil {
+	var model eventModel
+	if err := r.db.GetContext(ctx, &model, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrEventNotFound
 		}
 		return nil, err
 	}
 
-	return &event, nil
+	return model.toDomain(), nil
 }
 
 func (r *eventRepository) List(ctx context.Context, filter domain.EventFilter) ([]*domain.Event, error) {
@@ -59,9 +60,14 @@ func (r *eventRepository) List(ctx context.Context, filter domain.EventFilter) (
 		return nil, err
 	}
 
-	var events []*domain.Event
-	if err := r.db.SelectContext(ctx, &events, query, args...); err != nil {
+	var models []eventModel
+	if err := r.db.SelectContext(ctx, &models, query, args...); err != nil {
 		return nil, err
+	}
+
+	events := make([]*domain.Event, len(models))
+	for i, m := range models {
+		events[i] = m.toDomain()
 	}
 
 	return events, nil

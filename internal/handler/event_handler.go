@@ -9,26 +9,8 @@ import (
 
 	"github.com/anmaslov/calendar/internal/domain"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
-
-// ListEventsResponse represents the response for listing events.
-type ListEventsResponse struct {
-	Events []*domain.Event `json:"events"`
-	Total  int64           `json:"total"`
-	Limit  int             `json:"limit"`
-	Offset int             `json:"offset"`
-}
-
-// ErrorResponse represents an error response.
-type ErrorResponse struct {
-	Error ErrorDetail `json:"error"`
-}
-
-// ErrorDetail represents error details.
-type ErrorDetail struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
 
 func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 	filter := domain.EventFilter{
@@ -76,7 +58,7 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.respondJSON(w, http.StatusOK, ListEventsResponse{
-		Events: events,
+		Events: toEventResponseList(events),
 		Total:  total,
 		Limit:  filter.Limit,
 		Offset: filter.Offset,
@@ -84,9 +66,15 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getEvent(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	if id == "" {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
 		h.respondError(w, http.StatusBadRequest, "INVALID_ID", "Event ID is required")
+		return
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		h.respondError(w, http.StatusBadRequest, "INVALID_ID", "Invalid event ID format")
 		return
 	}
 
@@ -100,7 +88,7 @@ func (h *Handler) getEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.respondJSON(w, http.StatusOK, event)
+	h.respondJSON(w, http.StatusOK, toEventResponse(event))
 }
 
 func (h *Handler) respondJSON(w http.ResponseWriter, status int, data interface{}) {

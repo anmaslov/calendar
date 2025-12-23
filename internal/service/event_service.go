@@ -5,6 +5,7 @@ import (
 
 	"github.com/anmaslov/calendar/internal/domain"
 	"github.com/anmaslov/calendar/internal/repository"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -21,10 +22,10 @@ func NewEventService(repo repository.EventRepository, logger *zap.Logger) EventS
 	}
 }
 
-func (s *eventService) GetEvent(ctx context.Context, id string) (*domain.Event, error) {
+func (s *eventService) GetEvent(ctx context.Context, id uuid.UUID) (*domain.Event, error) {
 	event, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		s.logger.Error("failed to get event", zap.String("id", id), zap.Error(err))
+		s.logger.Error("failed to get event", zap.String("id", id.String()), zap.Error(err))
 		return nil, err
 	}
 

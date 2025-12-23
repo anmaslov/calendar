@@ -6,6 +6,7 @@ import (
 
 	"github.com/anmaslov/calendar/internal/config"
 	"github.com/anmaslov/calendar/internal/repository"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -97,6 +98,11 @@ func (w *Worker) sync(ctx context.Context) {
 
 	// Upsert events
 	for _, event := range events {
+		// Generate UUID if not set
+		if event.ID == uuid.Nil {
+			event.ID = uuid.New()
+		}
+
 		if err := w.syncRepo.Upsert(ctx, event); err != nil {
 			w.logger.Error("failed to upsert event",
 				zap.String("exchange_id", event.ExchangeID),
@@ -117,4 +123,3 @@ func (w *Worker) sync(ctx context.Context) {
 		zap.Int("synced_events", len(exchangeIDs)),
 	)
 }
-

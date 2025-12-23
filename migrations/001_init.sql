@@ -1,6 +1,9 @@
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create events table
 CREATE TABLE IF NOT EXISTS events (
-    id VARCHAR(36) PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     exchange_id VARCHAR(255) UNIQUE,
     subject VARCHAR(500) NOT NULL,
     body TEXT,
@@ -25,8 +28,8 @@ CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 
 -- Create event_attendees table
 CREATE TABLE IF NOT EXISTS event_attendees (
-    id SERIAL PRIMARY KEY,
-    event_id VARCHAR(36) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255),
     response_status VARCHAR(50),
@@ -37,11 +40,10 @@ CREATE INDEX IF NOT EXISTS idx_event_attendees_event_id ON event_attendees(event
 
 -- Create event_categories table
 CREATE TABLE IF NOT EXISTS event_categories (
-    id SERIAL PRIMARY KEY,
-    event_id VARCHAR(36) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     category VARCHAR(100) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_categories_event_id ON event_categories(event_id);
-

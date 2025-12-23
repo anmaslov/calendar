@@ -34,13 +34,15 @@ func (r *eventSyncRepository) Upsert(ctx context.Context, event *domain.Event) e
 	event.UpdatedAt = now
 	event.SyncedAt = &now
 
+	model := toEventModel(event)
+
 	query, args, err := psql.Insert(eventsTable).
 		Columns(eventColumns...).
 		Values(
-			event.ID, event.ExchangeID, event.Subject, event.Body, event.Location,
-			event.StartTime, event.EndTime, event.IsAllDay, event.Organizer,
-			event.Importance, event.Sensitivity, event.Status,
-			event.CreatedAt, event.UpdatedAt, event.SyncedAt,
+			model.ID, model.ExchangeID, model.Subject, model.Body, model.Location,
+			model.StartTime, model.EndTime, model.IsAllDay, model.Organizer,
+			model.Importance, model.Sensitivity, model.Status,
+			model.CreatedAt, model.UpdatedAt, model.SyncedAt,
 		).
 		Suffix(`ON CONFLICT (exchange_id) DO UPDATE SET
 			subject = EXCLUDED.subject,
@@ -78,4 +80,3 @@ func (r *eventSyncRepository) DeleteNotInExchangeIDs(ctx context.Context, exchan
 	_, err = r.db.ExecContext(ctx, query, args...)
 	return err
 }
-

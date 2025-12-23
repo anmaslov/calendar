@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/anmaslov/calendar/internal/domain"
+	"github.com/google/uuid"
 )
 
 // EventService defines the interface for event business logic.
 type EventService interface {
 	// GetEvent retrieves an event by its ID.
-	GetEvent(ctx context.Context, id string) (*domain.Event, error)
+	GetEvent(ctx context.Context, id uuid.UUID) (*domain.Event, error)
 
 	// ListEvents retrieves events based on filter criteria.
 	ListEvents(ctx context.Context, filter domain.EventFilter) ([]*domain.Event, int64, error)
