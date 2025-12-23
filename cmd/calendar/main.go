@@ -19,9 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const defaultMigrationsPath = "migrations"
+
 func main() {
 	// Parse command line flags
 	configPath := flag.String("config", "configs/config.yaml", "path to config file")
+	migrationsPath := flag.String("migrations", defaultMigrationsPath, "path to migrations directory")
 	flag.Parse()
 
 	// Initialize logger
@@ -46,6 +49,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to connect to database", zap.Error(err))
 	}
+
+	// Run database migrations
+	logger.Info("running database migrations...", zap.String("path", *migrationsPath))
+	if err := postgres.RunMigrations(db, *migrationsPath); err != nil {
+		logger.Fatal("failed to run migrations", zap.Error(err))
+	}
+	logger.Info("database migrations completed")
 
 	// Initialize repositories
 	eventRepo := postgres.NewEventRepository(db)

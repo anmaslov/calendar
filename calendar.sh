@@ -7,6 +7,7 @@ set -e
 BINARY="calendar"
 BUILD_DIR="bin"
 CONFIG_PATH="${CONFIG_PATH:-configs/config.yaml}"
+MIGRATIONS_PATH="${MIGRATIONS_PATH:-migrations}"
 COMPOSE_FILE="docker-compose.yml"
 COMPOSE_APP_FILE="docker-compose.app.yml"
 
@@ -129,6 +130,50 @@ cmd_db_logs() {
     docker-compose -f "$COMPOSE_FILE" logs -f postgres
 }
 
+# Команда: migrate
+cmd_migrate() {
+    print_header "Миграции базы данных"
+    
+    local action="${1:-status}"
+    
+    case "$action" in
+        up)
+            print_info "Применение миграций..."
+            go run ./cmd/calendar --config="$CONFIG_PATH" --migrations="$MIGRATIONS_PATH" 2>&1 | head -5
+            print_success "Миграции применены (приложение запущено для применения)"
+            ;;
+        create)
+            local name="${2:-}"
+            if [ -z "$name" ]; then
+                print_error "Укажите имя миграции: ./calendar.sh migrate create <name>"
+                exit 1
+            fi
+            local timestamp=$(date +%Y%m%d%H%M%S)
+            local up_file="$MIGRATIONS_PATH/${timestamp}_${name}.up.sql"
+            local down_file="$MIGRATIONS_PATH/${timestamp}_${name}.down.sql"
+            
+            echo "-- Migration: $name" > "$up_file"
+            echo "-- TODO: Add your migration SQL here" >> "$up_file"
+            
+            echo "-- Rollback: $name" > "$down_file"
+            echo "-- TODO: Add your rollback SQL here" >> "$down_file"
+            
+            print_success "Созданы файлы миграции:"
+            print_info "  $up_file"
+            print_info "  $down_file"
+            ;;
+        status)
+            print_info "Файлы миграций в $MIGRATIONS_PATH:"
+            ls -la "$MIGRATIONS_PATH"/*.sql 2>/dev/null || print_info "Нет файлов миграций"
+            ;;
+        *)
+            print_error "Неизвестное действие: $action"
+            echo "Доступные действия: up, create <name>, status"
+            exit 1
+            ;;
+    esac
+}
+
 # Команда: app-up (полный стек)
 cmd_app_up() {
     print_header "Запуск полного стека (PostgreSQL + App)"
@@ -211,6 +256,7 @@ cmd_help() {
     echo "  db-up              Запуск PostgreSQL"
     echo "  db-down            Остановка PostgreSQL"
     echo "  db-logs            Логи PostgreSQL"
+    echo "  migrate [action]   Управление миграциями (up, create <name>, status)"
     echo ""
     echo -e "${YELLOW}Полный стек (PostgreSQL + приложение):${NC}"
     echo "  app-up             Запуск полного стека"
@@ -221,12 +267,14 @@ cmd_help() {
     echo ""
     echo -e "${YELLOW}Переменные окружения:${NC}"
     echo "  CONFIG_PATH        Путь к конфигурации (по умолчанию: configs/config.yaml)"
+    echo "  MIGRATIONS_PATH    Путь к миграциям (по умолчанию: migrations)"
     echo "  DB_PASSWORD        Пароль базы данных"
     echo ""
     echo -e "${YELLOW}Примеры:${NC}"
     echo "  ./calendar.sh build"
     echo "  ./calendar.sh db-up && ./calendar.sh run"
     echo "  ./calendar.sh run configs/config.local.yaml"
+    echo "  ./calendar.sh migrate create add_users_table"
     echo "  DB_PASSWORD=secret ./calendar.sh app-up"
     echo "  ./calendar.sh app-logs app"
 }
@@ -264,6 +312,9 @@ main() {
             ;;
         db-logs)
             cmd_db_logs "$@"
+            ;;
+        migrate)
+            cmd_migrate "$@"
             ;;
         # Полный стек
         app-up|up)

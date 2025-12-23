@@ -1,5 +1,6 @@
 # Docker Compose для запуска полного стека (PostgreSQL + приложение)
 # Использование: docker-compose -f docker-compose.app.yml up -d
+# Миграции применяются автоматически при старте приложения через golang-migrate
 
 version: '3.8'
 
@@ -16,6 +17,7 @@ services:
       - EXCHANGE_PASSWORD=${EXCHANGE_PASSWORD:-}
     volumes:
       - ./configs/config.docker.yaml:/app/configs/config.yaml:ro
+      - ./migrations:/app/migrations:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,7 +42,6 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U calendar -d calendar"]
       interval: 5s
