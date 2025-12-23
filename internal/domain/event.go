@@ -32,4 +32,3 @@ type EventFilter struct {
 	Limit     int
 	Offset    int
 }
-

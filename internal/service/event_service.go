@@ -5,7 +5,6 @@ import (
 
 	"github.com/anmaslov/calendar/internal/domain"
 	"github.com/anmaslov/calendar/internal/repository"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -20,24 +19,6 @@ func NewEventService(repo repository.EventRepository, logger *zap.Logger) EventS
 		repo:   repo,
 		logger: logger,
 	}
-}
-
-func (s *eventService) CreateEvent(ctx context.Context, event *domain.Event) error {
-	if event.ID == "" {
-		event.ID = uuid.New().String()
-	}
-
-	if err := s.validateEvent(event); err != nil {
-		return err
-	}
-
-	if err := s.repo.Create(ctx, event); err != nil {
-		s.logger.Error("failed to create event", zap.Error(err))
-		return err
-	}
-
-	s.logger.Info("event created", zap.String("id", event.ID))
-	return nil
 }
 
 func (s *eventService) GetEvent(ctx context.Context, id string) (*domain.Event, error) {
@@ -65,50 +46,3 @@ func (s *eventService) ListEvents(ctx context.Context, filter domain.EventFilter
 
 	return events, count, nil
 }
-
-func (s *eventService) UpdateEvent(ctx context.Context, event *domain.Event) error {
-	if err := s.validateEvent(event); err != nil {
-		return err
-	}
-
-	if err := s.repo.Update(ctx, event); err != nil {
-		s.logger.Error("failed to update event", zap.String("id", event.ID), zap.Error(err))
-		return err
-	}
-
-	s.logger.Info("event updated", zap.String("id", event.ID))
-	return nil
-}
-
-func (s *eventService) DeleteEvent(ctx context.Context, id string) error {
-	if err := s.repo.Delete(ctx, id); err != nil {
-		s.logger.Error("failed to delete event", zap.String("id", id), zap.Error(err))
-		return err
-	}
-
-	s.logger.Info("event deleted", zap.String("id", id))
-	return nil
-}
-
-func (s *eventService) SyncEvents(ctx context.Context) error {
-	// TODO: Implement Exchange sync logic
-	s.logger.Info("sync events called - not implemented yet")
-	return nil
-}
-
-func (s *eventService) validateEvent(event *domain.Event) error {
-	if event.Subject == "" {
-		return domain.ErrInvalidInput
-	}
-
-	if event.StartTime.IsZero() || event.EndTime.IsZero() {
-		return domain.ErrInvalidInput
-	}
-
-	if event.EndTime.Before(event.StartTime) {
-		return domain.ErrInvalidInput
-	}
-
-	return nil
-}
-

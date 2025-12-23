@@ -5,7 +5,8 @@ alwaysApply: true
 
 # Project: Calendar
 
-#
+# Documentation
+Не пиши документацию, пока тебя об этом явно не попросили
 
 ## Architecture
 - Clean Architecture with layers: handler → service → repository

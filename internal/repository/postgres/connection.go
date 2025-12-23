@@ -13,10 +13,9 @@ func NewConnection(cfg config.DatabaseConfig) (*sqlx.DB, error) {
 		return nil, err
 	}
 
-	// Set connection pool settings
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	// Set connection pool settings from config
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
 
 	return db, nil
 }
-

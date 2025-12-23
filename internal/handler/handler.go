@@ -11,13 +11,15 @@ import (
 type Handler struct {
 	eventService service.EventService
 	logger       *zap.Logger
+	probes       *Probes
 }
 
 // New creates a new Handler.
-func New(eventService service.EventService, logger *zap.Logger) *Handler {
+func New(eventService service.EventService, logger *zap.Logger, probes *Probes) *Handler {
 	return &Handler{
 		eventService: eventService,
 		logger:       logger,
+		probes:       probes,
 	}
 }
 
@@ -32,22 +34,20 @@ func (h *Handler) Router() chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
 
-	// Health check
+	// Health check (legacy)
 	r.Get("/health", h.healthCheck)
 
-	// API v1 routes
+	// Kubernetes probes
+	r.Get("/healthz", h.livenessProbe) // Liveness probe
+	r.Get("/readyz", h.readinessProbe) // Readiness probe
+
+	// API v1 routes (read-only)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/events", func(r chi.Router) {
 			r.Get("/", h.listEvents)
-			r.Post("/", h.createEvent)
 			r.Get("/{id}", h.getEvent)
-			r.Put("/{id}", h.updateEvent)
-			r.Delete("/{id}", h.deleteEvent)
 		})
-
-		r.Post("/sync", h.syncEvents)
 	})
 
 	return r
 }
-

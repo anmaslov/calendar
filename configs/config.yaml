@@ -1,0 +1,33 @@
+# Calendar Application Configuration
+
+server:
+  port: 8080
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  shutdown_timeout: 30s
+
+database:
+  host: localhost
+  port: 5432
+  user: calendar
+  password: ""  # Set via environment variable DB_PASSWORD or in config.local.yaml
+  name: calendar
+  ssl_mode: disable
+  max_open_conns: 25
+  max_idle_conns: 5
+
+exchange:
+  url: ""  # https://your-exchange-server.com/ews/exchange.asmx
+  username: ""
+  password: ""  # Set via environment variable EXCHANGE_PASSWORD
+  domain: ""
+
+sync:
+  enabled: false  # Enable background sync with Exchange
+  interval: 5m    # Sync interval
+  sync_days: 30   # How many days ahead to sync
+
+logging:
+  level: info  # debug, info, warn, error
+  format: json  # json, console

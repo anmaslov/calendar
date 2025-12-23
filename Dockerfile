@@ -21,19 +21,22 @@ FROM alpine:3.19
 
 WORKDIR /app
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata
+# Install ca-certificates for HTTPS requests and wget for healthcheck
+RUN apk --no-cache add ca-certificates tzdata wget
 
 # Copy binary from builder
 COPY --from=builder /app/calendar .
 
+# Create configs directory
+RUN mkdir -p /app/configs
+
 # Create non-root user
 RUN adduser -D -g '' appuser
+RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
 EXPOSE 8080
 
-# Run the application
-CMD ["./calendar"]
-
+# Run the application with config
+CMD ["./calendar", "--config=/app/configs/config.yaml"]

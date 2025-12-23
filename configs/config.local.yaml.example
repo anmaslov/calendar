@@ -1,0 +1,24 @@
+# Local development configuration
+# Copy this file to config.local.yaml and fill in your values
+# config.local.yaml is ignored by git
+
+server:
+  port: 8080
+
+database:
+  host: localhost
+  port: 5432
+  user: calendar
+  password: your_secure_password_here
+  name: calendar
+
+exchange:
+  url: https://your-exchange-server.com/ews/exchange.asmx
+  username: your_username
+  password: your_password
+  domain: your_domain
+
+logging:
+  level: debug
+  format: console
+

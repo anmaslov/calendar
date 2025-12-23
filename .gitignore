@@ -35,6 +35,10 @@ vendor/
 # Keep example env file
 !.env.example
 
+# Local config with secrets
+configs/config.local.yaml
+configs/*.local.yaml
+
 # OS files
 .DS_Store
 Thumbs.db
