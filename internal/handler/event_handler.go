@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -12,44 +13,14 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	defaultLimit  = 20
+	defaultOffset = 0
+	maxLimit      = 100
+)
+
 func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
-	filter := domain.EventFilter{
-		Limit:  20,
-		Offset: 0,
-	}
-
-	// Parse query parameters
-	if limit := r.URL.Query().Get("limit"); limit != "" {
-		if l, err := strconv.Atoi(limit); err == nil && l > 0 {
-			filter.Limit = l
-		}
-	}
-
-	if offset := r.URL.Query().Get("offset"); offset != "" {
-		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-			filter.Offset = o
-		}
-	}
-
-	if startDate := r.URL.Query().Get("start_date"); startDate != "" {
-		if t, err := time.Parse(time.RFC3339, startDate); err == nil {
-			filter.StartDate = &t
-		}
-	}
-
-	if endDate := r.URL.Query().Get("end_date"); endDate != "" {
-		if t, err := time.Parse(time.RFC3339, endDate); err == nil {
-			filter.EndDate = &t
-		}
-	}
-
-	if subject := r.URL.Query().Get("subject"); subject != "" {
-		filter.Subject = subject
-	}
-
-	if status := r.URL.Query().Get("status"); status != "" {
-		filter.Status = status
-	}
+	filter := parseEventFilter(r.URL.Query())
 
 	events, total, err := h.eventService.ListEvents(r.Context(), filter)
 	if err != nil {
@@ -63,6 +34,34 @@ func (h *Handler) listEvents(w http.ResponseWriter, r *http.Request) {
 		Limit:  filter.Limit,
 		Offset: filter.Offset,
 	})
+}
+
+func parseEventFilter(q url.Values) domain.EventFilter {
+	filter := domain.EventFilter{
+		Limit:  defaultLimit,
+		Offset: defaultOffset,
+	}
+
+	if l, err := strconv.Atoi(q.Get("limit")); err == nil && l > 0 {
+		filter.Limit = min(l, maxLimit)
+	}
+
+	if o, err := strconv.Atoi(q.Get("offset")); err == nil && o >= 0 {
+		filter.Offset = o
+	}
+
+	if t, err := time.Parse(time.RFC3339, q.Get("start_date")); err == nil {
+		filter.StartDate = &t
+	}
+
+	if t, err := time.Parse(time.RFC3339, q.Get("end_date")); err == nil {
+		filter.EndDate = &t
+	}
+
+	filter.Subject = q.Get("subject")
+	filter.Status = q.Get("status")
+
+	return filter
 }
 
 func (h *Handler) getEvent(w http.ResponseWriter, r *http.Request) {
