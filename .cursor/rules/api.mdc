@@ -1,0 +1,51 @@
+---
+description: Rules for API development
+globs: ["**/handler/**/*.go", "**/api/**/*.go"]
+---
+
+# API Development Guidelines
+
+## RESTful Design
+- Use proper HTTP methods: GET, POST, PUT, PATCH, DELETE
+- Use plural nouns for resources: `/events`, `/users`
+- Use nested routes for relationships: `/users/{id}/events`
+
+## Request/Response
+- Use JSON for request and response bodies
+- Use proper HTTP status codes
+- Include `Content-Type: application/json` header
+
+## Status Codes
+- 200 OK - successful GET, PUT, PATCH
+- 201 Created - successful POST
+- 204 No Content - successful DELETE
+- 400 Bad Request - validation errors
+- 401 Unauthorized - missing/invalid auth
+- 403 Forbidden - no permission
+- 404 Not Found - resource doesn't exist
+- 500 Internal Server Error - server errors
+
+## Error Response Format
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Human readable message",
+    "details": []
+  }
+}
+```
+
+## Validation
+- Validate all input data
+- Return specific error messages
+- Use struct tags for validation (go-playground/validator)
+
+## Pagination
+- Use query params: `?page=1&limit=20`
+- Return total count in response
+- Set reasonable default and max limits
+
+## Versioning
+- Use URL path versioning: `/api/v1/events`
+- Or use header: `Accept: application/vnd.api.v1+json`
